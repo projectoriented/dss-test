@@ -47,16 +47,20 @@ test_model_one <- function(bs_object, design, output_prefix) {
     DMLtest.case.coef1 <- DMLtest.multiFactor(DMLfit, coef=2)
     DMLtest.case.coef2 <- DMLtest.multiFactor(DMLfit, coef=3)
 
-
     case.ix <- sort(DMLtest.case[,"pvals"], index.return=TRUE)$ix
     familyid.ix <- sort(DMLtest.familyid[,"pvals"], index.return=TRUE)$ix
     case.coef1.ix <- sort(DMLtest.case.coef1[,"pvals"], index.return=TRUE)$ix
     case.coef2.ix <- sort(DMLtest.case.coef2[,"pvals"], index.return=TRUE)$ix
 
-    call.case.dmr <- callDMR(DMLtest.case, p.threshold=0.05)
-    call.familyid.dmr <- callDMR(DMLtest.familyid, p.threshold=0.05)
-    call.case.coef1.dmr <- callDMR(DMLtest.case.coef1, p.threshold=0.05)
-    call.case.coef2.dmr <- callDMR(DMLtest.case.coef2, p.threshold=0.05)
+    write.table(DMLtest.case[case.ix,], file=paste(output_prefix, "case_DML.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
+    write.table(DMLtest.familyid[familyid.ix,], file=paste(output_prefix, "familyid_DML.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
+    write.table(DMLtest.case.coef1[case.coef1.ix,], file=paste(output_prefix, "case-coef1_DML.tsv", sep="_"), sep="\t", quote=FALSE, row.names=FALSE)
+    write.table(DMLtest.case.coef2[case.coef2.ix,], file=paste(output_prefix, "case-coef2_DML.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
+
+    call.case.dmr <- callDMR(DMLtest.case, p.threshold=0.001)
+    call.familyid.dmr <- callDMR(DMLtest.familyid, p.threshold=0.001)
+    call.case.coef1.dmr <- callDMR(DMLtest.case.coef1, p.threshold=0.001)
+    call.case.coef2.dmr <- callDMR(DMLtest.case.coef2, p.threshold=0.001)
 
     write.table(call.case.dmr, file=paste(output_prefix, "case_DMR.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
     write.table(call.familyid.dmr, file=paste(output_prefix, "familyid_DMR.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
@@ -79,6 +83,10 @@ test_model_two <- function(bs_object, design, output_prefix) {
     case.ix <- sort(DMLtest.case[,"pvals"], index.return=TRUE)$ix
     familyid.ix <- sort(DMLtest.familyid[,"pvals"], index.return=TRUE)$ix
     allele.ix <- sort(DMLtest.allele[,"pvals"], index.return=TRUE)$ix
+
+    write.table(DMLtest.case[case.ix,], file=paste(output_prefix, "case_DML.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
+    write.table(DMLtest.familyid[familyid.ix,], file=paste(output_prefix, "familyid_DML.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
+    write.table(DMLtest.allele[allele.ix,], file=paste(output_prefix, "allele_DML.tsv", sep="_"), sep="\t", quote=FALSE, row.names=FALSE)
 
     call.case.dmr <- callDMR(DMLtest.case, p.threshold=0.05)
     call.familyid.dmr <- callDMR(DMLtest.familyid, p.threshold=0.05)

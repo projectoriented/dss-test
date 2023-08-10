@@ -31,13 +31,15 @@ def get_final_dss_targets(wildcards):
 
     model_one = expand(
         # "results/model_one/{chr}_{covariates}_DMR.tsv",
-        "results/model_one/intersection/annotation/wgs_DMR-annotated_summary.tsv.gz",
+        "results/model_one/intersection/annotation/{chr}_DMR-annotated_summary.tsv.gz",
+        chr=AUTOSOMES+SEX,
         # covariates=["case", "familyid", "case-coef1", "case-coef2"]
     )
 
     model_two = expand(
         # "results/model_two/{chr}_{covariates}_DMR.tsv",
-        "results/model_two/intersection/annotation/wgs_DMR-annotated_summary.tsv.gz",
+        "results/model_two/intersection/annotation/{chr}_DMR-annotated_summary.tsv.gz",
+        chr=AUTOSOMES,
         # covariates=["case", "familyid", "allele"]
     )
 
@@ -48,10 +50,10 @@ def get_dss_inputs(model="model_one"):
 
         if model == "model_one":
             sample_names = df.query("sex == 'F'").groupby("family_id")["sample"].filter(lambda x: x.count() == 3).tolist()
-            file_names = [f"results/mCG/{s}_cpg.txt" for s in sample_names]
+            file_names = [f"results/mCG/{s}_cpg_{{chr}}.txt" for s in sample_names]
         elif model == "model_two":
             sample_names = df.loc[~df["sample"].str.contains("mo|fa"), "sample"].tolist()
-            file_names = [f"results/mCG/{s}_{h}_cpg.txt" for s in sample_names for h in HAP]
+            file_names = [f"results/mCG/{s}_{h}_cpg_{{chr}}.txt" for s in sample_names for h in HAP]
         else:
             raise ValueError("Invalid param in get_dss_inputs")
         return file_names
@@ -104,19 +106,19 @@ def get_dss_params(model="model_one"):
 def get_dss_groups(wildcards):
     if wildcards.model == "model_one":
         return {
-            "a": [f"results/model_one/wgs_case_DMR.tsv"],
-            "b": [f"results/model_one/wgs_{c}_DMR.tsv" for c in MODEL_ONE_COVARIATES[1:]]
+            "a": [f"results/model_one/{wildcards.chr}_case_DMR.tsv"],
+            "b": [f"results/model_one/{wildcards.chr}_{c}_DMR.tsv" for c in MODEL_ONE_COVARIATES[1:]]
         }
     elif wildcards.model == "model_two":
         return {
-            "a": [f"results/model_two/wgs_allele_DMR.tsv"],
-            "b": [f"results/model_two/wgs_{c}_DMR.tsv" for c in MODEL_TWO_COVARIATES if "allele" not in c]
+            "a": [f"results/model_two/{wildcards.chr}_allele_DMR.tsv"],
+            "b": [f"results/model_two/{wildcards.chr}_{c}_DMR.tsv" for c in MODEL_TWO_COVARIATES if "allele" not in c]
         }
 
 def get_dss_summaries_by_chrom(wildcards):
     targets = []
 
-    file_pattern = "results/{{model}}/intersection/temp/wgs_DMR-{sample}_{suffix}.tsv"
+    file_pattern = "results/{{model}}/intersection/temp/{{chr}}_DMR-{sample}_{suffix}.tsv"
 
     for row in df.itertuples():
         if "_mo" in row.sample or "_fa" in row.sample:
@@ -140,7 +142,7 @@ rule dss_prepare_in_txt:
     input:
         bed="bed-pileups/{sample}_{suffix}-pileup.bed.gz",
     output:
-        bed_by_chrom=temp("results/mCG/{sample}_{suffix}.txt")
+        bed_by_chrom=temp("results/mCG/{sample}_{suffix}_{chr}.txt")
     threads: config["default"]["threads"]
     resources:
         mem=lambda wildcards, attempt: attempt * config["default"]["mem"],
@@ -150,21 +152,17 @@ rule dss_prepare_in_txt:
         # Columns grabbed are based on this documentation: https://github.com/nanoporetech/modkit/#bedmethyl-column-descriptions
 
         # chrom, start, n_valid, n_mod
-        zcat {input.bed} | awk '{{print $1,$2,$10,$12}}' FS='\\t' OFS='\\t' > {output.bed_by_chrom}
+        zgrep -w {wildcards.chr} {input.bed} | awk '{{print $1,$2,$10,$12}}' FS='\\t' OFS='\\t' > {output.bed_by_chrom}
         """
 
 rule dss_model_one:
     input:
         file_names = get_dss_inputs(model="model_one")
     output:
-        case_dmr = "results/model_one/wgs_case_DMR.tsv",
-        family_dmr = "results/model_one/wgs_familyid_DMR.tsv",
-        case_coef1_dmr = "results/model_one/wgs_case-coef1_DMR.tsv",
-        case_coef2_dmr = "results/model_one/wgs_case-coef2_DMR.tsv",
-        case_dml = "results/model_one/wgs_case_DML.tsv",
-        family_dml = "results/model_one/wgs_familyid_DML.tsv",
-        case_coef1_dml = "results/model_one/wgs_case-coef1_DML.tsv",
-        case_coef2_dml = "results/model_one/wgs_case-coef2_DML.tsv",
+        case_dmr = "results/model_one/{chr}_case_DMR.tsv",
+        family_dmr = "results/model_one/{chr}_familyid_DMR.tsv",
+        case_coef1_dmr = "results/model_one/{chr}_case-coef1_DMR.tsv",
+        case_coef2_dmr = "results/model_one/{chr}_case-coef2_DMR.tsv",
     wildcard_constraints:
         chr="chr[0-9]+|chrX"
     params:
@@ -184,12 +182,11 @@ rule dss_model_two:
     input:
         file_names = get_dss_inputs(model="model_two")
     output:
-        case_dmr = "results/model_two/wgs_case_DMR.tsv",
-        family_dmr = "results/model_two/wgs_familyid_DMR.tsv",
-        allele_dmr = "results/model_two/wgs_allele_DMR.tsv",
-        case_dml = "results/model_two/wgs_case_DML.tsv",
-        family_dml = "results/model_two/wgs_familyid_DML.tsv",
-        allele_dml = "results/model_two/wgs_allele_DML.tsv",
+        case_dmr = "results/model_two/{chr}_case_DMR.tsv",
+        family_dmr = "results/model_two/{chr}_familyid_DMR.tsv",
+        allele_dmr = "results/model_two/{chr}_allele_DMR.tsv",
+    wildcard_constraints:
+        chr="chr[0-9]+"
     params:
         get_dss_params(model="model_two"),
         output_prefix="results/model_two/wgs"
@@ -208,12 +205,12 @@ rule dss_intersect:
     input:
         unpack(get_dss_groups)
     output:
-        dmr="results/{model}/intersection/wgs_DMR.tsv"
+        dmr="results/{model}/intersection/{chr}_DMR.tsv"
     threads: config["default"]["threads"]
     resources:
         mem=lambda wildcards, attempt: attempt * config["default"]["mem"],
         hrs=config["default"]["hrs"]
-    log: "results/{model}/intersection/log/wgs_DMR.log"
+    log: "results/{model}/intersection/log/{chr}_DMR.log"
     run:
         from pybedtools import BedTool
 
@@ -234,7 +231,7 @@ rule dss_intersect:
         intersection_df = ( a_bed + list(b_dict.values()) ).to_dataframe(disable_auto_names=True, names=target_cols,header=None)
 
         if intersection_df.empty:
-            print(f"No intersection happened for {wildcards.model}", file=sys.stderr)
+            print(f"No intersection happened for {wildcards.chr}", file=sys.stderr)
             print(f"Combining both files in output.\nA: {a}\nB: {b}", file=sys.stderr)
             intersection_df = pd.concat([ pd.read_table(x, header=0, dtype={"start": int, "end": int}) for x in [a] + b])
         else:
@@ -246,10 +243,10 @@ rule dss_intersect:
 
 rule dss_summary_table:
     input:
-        dss_out = "results/{model}/intersection/wgs_DMR.tsv",
-        sample_bed = "results/mCG/{sample}_{suffix}.txt"
+        dss_out = "results/{model}/intersection/{chr}_DMR.tsv",
+        sample_bed = "results/mCG/{sample}_{suffix}_{chr}.txt"
     output:
-        sample_summary_table = temp("results/{model}/intersection/temp/wgs_DMR-{sample}_{suffix}.tsv")
+        sample_summary_table = temp("results/{model}/intersection/temp/{chr}_DMR-{sample}_{suffix}.tsv")
     threads: config["default"]["threads"]
     resources:
         mem= lambda wildcards,attempt: attempt * config["default"]["mem"],
@@ -262,7 +259,7 @@ rule merge_dss_summary_table:
     input:
         all_samples=get_dss_summaries_by_chrom,
     output:
-        chrom_summary_table=temp("results/{model}/intersection/annotation/wgs_DMR-prcnt_summary.tsv.gz")
+        chrom_summary_table=temp("results/{model}/intersection/annotation/{chr}_DMR-prcnt_summary.tsv.gz")
     threads: config["default"]["threads"]
     resources:
         mem= lambda wildcards,attempt: attempt * config["default"]["mem"],
@@ -274,9 +271,9 @@ rule merge_dss_summary_table:
 rule add_annotation:
     input:
         unpack(get_anno_dict),
-        merged_summary = "results/{model}/intersection/annotation/wgs_DMR-prcnt_summary.tsv.gz",
+        merged_summary = "results/{model}/intersection/annotation/{chr}_DMR-prcnt_summary.tsv.gz",
     output:
-        added_annotation = "results/{model}/intersection/annotation/wgs_DMR-annotated_summary.tsv.gz"
+        added_annotation = "results/{model}/intersection/annotation/{chr}_DMR-annotated_summary.tsv.gz"
     threads: config["default"]["threads"]
     resources:
         mem= lambda wildcards,attempt: attempt * config["default"]["mem"],
