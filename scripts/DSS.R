@@ -38,20 +38,13 @@ test_model_one <- function(bs_object, design, output_prefix, which_base) {
 
     design[] <- lapply(design, factor)
 
-    # Define the factor order
-    if (which_base == "sibling") {
-        design$case <- factor(design$case, levels=c("sibling", "mother", "asd"))
-        coef1_name="casemother"
-    else if (which_base == "mother") {
-        design$case <- factor(design$case, levels=c("mother", "sibling", "asd"))
-        coef1_name="casesibling"
-    } else {
-        warning(paste(which_base, "is an unsupported argument.", sep=" "))
-        stop("Halting the code due to unsupported argument.")
-    }
+    # Define the factor order with sibling as base
+    design$case <- factor(design$case, levels=c("sibling", "mother", "asd"))
+    coef_name <- "casemother"
 
     DMLfit <- DMLfit.multiFactor(BSobj, design=design, formula=~case+family.id)
 
+    print("Using sibling as base")
     print(DMLfit$X)
     cat("\n")
 
@@ -67,7 +60,7 @@ test_model_one <- function(bs_object, design, output_prefix, which_base) {
 
     write.table(DMLtest.case[case.ix,], file=paste(output_prefix, "case_DML.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
     write.table(DMLtest.familyid[familyid.ix,], file=paste(output_prefix, "familyid_DML.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
-    write.table(DMLtest.case.coef1[case.coef1.ix,], file=paste(output_prefix, coef1_name, "DML.tsv", sep="_"), sep="\t", quote=FALSE, row.names=FALSE)
+    write.table(DMLtest.case.coef1[case.coef1.ix,], file=paste(output_prefix, coef_name, "DML.tsv", sep="_"), sep="\t", quote=FALSE, row.names=FALSE)
     write.table(DMLtest.case.coef2[case.coef2.ix,], file=paste(output_prefix, "caseasd_DML.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
 
     call.case.dmr <- callDMR(DMLtest.case, p.threshold=0.001)
@@ -77,8 +70,27 @@ test_model_one <- function(bs_object, design, output_prefix, which_base) {
 
     write.table(call.case.dmr, file=paste(output_prefix, "case_DMR.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
     write.table(call.familyid.dmr, file=paste(output_prefix, "familyid_DMR.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
-    write.table(call.case.coef1.dmr, file=paste(output_prefix, coef1_name, "DMR.tsv", sep="_"), sep="\t", quote=FALSE, row.names=FALSE)
+    write.table(call.case.coef1.dmr, file=paste(output_prefix, coef_name, "DMR.tsv", sep="_"), sep="\t", quote=FALSE, row.names=FALSE)
     write.table(call.case.coef2.dmr, file=paste(output_prefix, "caseasd_DMR.tsv", sep="_"),sep="\t", quote=FALSE, row.names=FALSE)
+
+
+    # Define the factor order with mother as base
+    design$case <- factor(design$case, levels=c("mother", "sibling", "asd"))
+    coef_name <- "casesibling"
+
+    DMLfit <- DMLfit.multiFactor(BSobj, design=design, formula=~case+family.id)
+
+    print("Using mother as base")
+    cat("\n")
+    print(DMLfit$X)
+    cat("\n")
+
+    DMLtest.case.other <- DMLtest.multiFactor(DMLfit, coef=coef_name)
+    case.other.ix <- sort(DMLtest.case.other[,"pvals"], index.return=TRUE)$ix
+    write.table(DMLtest.case.other[case.other.ix,], file=paste(output_prefix, coef_name, "DML.tsv", sep="_"), sep="\t", quote=FALSE, row.names=FALSE)
+
+    call.case.other.dmr <- callDMR(DMLtest.case.other, p.threshold=0.001)
+    write.table(call.case.other.dmr, file=paste(output_prefix, coef_name, "DMR.tsv", sep="_"), sep="\t", quote=FALSE, row.names=FALSE)
 }
 
 test_model_two <- function(bs_object, design, output_prefix) {
@@ -129,7 +141,7 @@ if (param_dict$model == "model_one") {
     design.table <- create_model_one_table(case_names = param_dict$case, family_names = param_dict$family_names)
     print(design.table)
     cat("\n")
-    test_model_one(bs_object = BSobj, design = design.table, output_prefix = output.prefix, which_base=snakemake@wildcards[["which_base"]])
+    test_model_one(bs_object = BSobj, design = design.table, output_prefix = output.prefix)
 } else if (param_dict$model == "model_two") {
     design.table <- create_model_two_table(case_names = param_dict$case, allele_names= param_dict$allele_names, family_names = param_dict$family_names)
     print(design.table)

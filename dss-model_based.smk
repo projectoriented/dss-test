@@ -6,7 +6,7 @@ DSS_CNTR="/net/eichler/vol26/7200/software/containers/R/DSS/2.46.0/bioconductor-
 AUTOSOMES=['chr{}'.format(x) for x in list(range(1, 23))]
 SEX=["chrX"]
 HAP=["hap1", "hap2"]
-MODEL_ONE_COVARIATES=["case", "familyid", "case-coef1", "case-coef2"]
+MODEL_ONE_COVARIATES=["case", "familyid", "caseasd", "casemother", "casesibling"]
 MODEL_TWO_COVARIATES=["case", "familyid", "allele"]
 
 # --------- Load files --------- #
@@ -159,15 +159,16 @@ rule dss_model_one:
     output:
         case_dmr = "results/model_one/wgs_case_DMR.tsv",
         family_dmr = "results/model_one/wgs_familyid_DMR.tsv",
-        case_coef1_dmr = "results/model_one/wgs_case{which_base}_DMR.tsv",
+        case_coef1_dmr = "results/model_one/wgs_casesibling_DMR.tsv",
+        case_other_dmr = "results/model_one/wgs_casemother_DMR.tsv",
         case_coef2_dmr = "results/model_one/wgs_caseasd_DMR.tsv",
         case_dml = "results/model_one/wgs_case_DML.tsv",
         family_dml = "results/model_one/wgs_familyid_DML.tsv",
-        case_coef1_dml = "results/model_one/wgs_case{which_base}_DML.tsv",
+        case_coef1_dml = "results/model_one/wgs_casesibling_DML.tsv",
+        case_other_dml = "results/model_one/wgs_casemother_DML.tsv",
         case_coef2_dml = "results/model_one/wgs_caseasd_DML.tsv",
     wildcard_constraints:
         chr="chr[0-9]+|chrX",
-        which_base="mother|sibling",
     params:
         get_dss_params(model="model_one"),
         output_prefix="results/model_one/wgs",
