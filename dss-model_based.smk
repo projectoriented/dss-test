@@ -95,7 +95,7 @@ def get_dss_params(model="model_one"):
             "case": case_names,
             "family_names": [x.split("_")[0] for x in sample_names],
             "allele_names": allele_names,
-            "model": model
+            "model": model,
         }
 
         return param_dict
@@ -159,17 +159,18 @@ rule dss_model_one:
     output:
         case_dmr = "results/model_one/wgs_case_DMR.tsv",
         family_dmr = "results/model_one/wgs_familyid_DMR.tsv",
-        case_coef1_dmr = "results/model_one/wgs_case-coef1_DMR.tsv",
-        case_coef2_dmr = "results/model_one/wgs_case-coef2_DMR.tsv",
+        case_coef1_dmr = "results/model_one/wgs_case{which_base}_DMR.tsv",
+        case_coef2_dmr = "results/model_one/wgs_caseasd_DMR.tsv",
         case_dml = "results/model_one/wgs_case_DML.tsv",
         family_dml = "results/model_one/wgs_familyid_DML.tsv",
-        case_coef1_dml = "results/model_one/wgs_case-coef1_DML.tsv",
-        case_coef2_dml = "results/model_one/wgs_case-coef2_DML.tsv",
+        case_coef1_dml = "results/model_one/wgs_case{which_base}_DML.tsv",
+        case_coef2_dml = "results/model_one/wgs_caseasd_DML.tsv",
     wildcard_constraints:
-        chr="chr[0-9]+|chrX"
+        chr="chr[0-9]+|chrX",
+        which_base="mother|sibling",
     params:
         get_dss_params(model="model_one"),
-        output_prefix="results/model_one/wgs"
+        output_prefix="results/model_one/wgs",
     threads: config["analysis"]["dss"]["threads"]
     resources:
         mem=lambda wildcards, attempt: attempt * config["analysis"]["dss"]["mem"],

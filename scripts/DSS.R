@@ -129,7 +129,7 @@ if (param_dict$model == "model_one") {
     design.table <- create_model_one_table(case_names = param_dict$case, family_names = param_dict$family_names)
     print(design.table)
     cat("\n")
-    test_model_one(bs_object = BSobj, design = design.table, output_prefix = output.prefix)
+    test_model_one(bs_object = BSobj, design = design.table, output_prefix = output.prefix, which_base=snakemake@wildcards[["which_base"]])
 } else if (param_dict$model == "model_two") {
     design.table <- create_model_two_table(case_names = param_dict$case, allele_names= param_dict$allele_names, family_names = param_dict$family_names)
     print(design.table)
