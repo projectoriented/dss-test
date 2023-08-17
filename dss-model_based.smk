@@ -6,7 +6,7 @@ DSS_CNTR="/net/eichler/vol26/7200/software/containers/R/DSS/2.46.0/bioconductor-
 AUTOSOMES=['chr{}'.format(x) for x in list(range(1, 23))]
 SEX=["chrX"]
 HAP=["hap1", "hap2"]
-MODEL_ONE_COVARIATES=["case", "familyid", "caseasd", "casemother", "casesibling"]
+MODEL_ONE_COVARIATES=["caseasd", "case", "familyid", "casemother", "casesibling"]
 MODEL_TWO_COVARIATES=["case", "familyid", "allele"]
 
 # --------- Load files --------- #
@@ -104,13 +104,15 @@ def get_dss_params(model="model_one"):
 def get_dss_groups(wildcards):
     if wildcards.model == "model_one":
         return {
-            "a": [f"results/model_one/wgs_case_DMR.tsv"],
-            "b": [f"results/model_one/wgs_{c}_DMR.tsv" for c in MODEL_ONE_COVARIATES[1:]]
+            "a": [f"results/model_one/wgs_caseasd_DMR.tsv"],
+            # "b": [f"results/model_one/wgs_{c}_DMR.tsv" for c in MODEL_ONE_COVARIATES[1:]]
+            "b": [f"results/model_one/wgs_{c}_DMR.tsv" for c in ["case", "casemother", "casesibling"]]
         }
     elif wildcards.model == "model_two":
         return {
             "a": [f"results/model_two/wgs_allele_DMR.tsv"],
-            "b": [f"results/model_two/wgs_{c}_DMR.tsv" for c in MODEL_TWO_COVARIATES if "allele" not in c]
+            # "b": [f"results/model_two/wgs_{c}_DMR.tsv" for c in MODEL_TWO_COVARIATES if "allele" not in c]
+            "b": [f"results/model_two/wgs_case_DMR.tsv"]
         }
 
 def get_dss_summaries_by_chrom(wildcards):
